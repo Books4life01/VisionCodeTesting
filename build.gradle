@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    ymavenCentral()
+    maven { url 'https://jitpack.com' } //add jitpack as a maven repo 
+}
+
+
+dependencies {
+    implementation 'com.github.deltacv:EOCV-Sim:3.4.2' //add the EOCV-Sim dependency
+    implementation 'org.openpnp:opencv:4.5.1-2'
+    implementation 'com.github.deltacv:AprilTagDesktop:1.1.1'
+    implementation 'org.openftc:easyopencv:1.5.1'
+  
+}
