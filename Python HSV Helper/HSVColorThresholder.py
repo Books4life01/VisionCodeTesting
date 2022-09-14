@@ -5,7 +5,7 @@ def nothing(x):
     pass
 
 # Load image
-image = cv2.imread('HsvColorChart.png')
+image = cv2.imread('Python HSV Helper\HsvColorChart.png')
 
 # Create a window
 cv2.namedWindow('image')
