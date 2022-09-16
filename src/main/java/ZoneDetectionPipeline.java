@@ -15,12 +15,32 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class ZoneDetectionPipeline extends OpenCvPipeline {
     //Upeer and lower HSV Values, use HSV Helper to convert
-    public Scalar lower = new Scalar(12 , 93, 0);
-    public Scalar upper = new Scalar(20 ,255,255);
+    //Orange
+    public Scalar orangeLower = new Scalar(12 , 93, 0);
+    public Scalar orangeUpper = new Scalar(20 ,255,255);
+
+   //Yellow
+    public Scalar yellowLower = new Scalar(23 , 81, 0);
+    public Scalar yellowUpper = new Scalar(36 ,255,255);
+
+    //Pink
+    public Scalar pinkLower = new Scalar(156 , 24, 0);
+    public Scalar pinkUpper = new Scalar(177.5 ,255,255);
+
+    //Green
+    public Scalar greenLower = new Scalar(63 , 63, 0);
+    public Scalar greenUpper = new Scalar(83 ,255,255);
+    //Green
+    public Scalar blackLower = new Scalar(0 , 0, 0);
+    public Scalar blackUpper = new Scalar(255 ,255,10);
+
+
+
     //Will hold black and white result
     public Mat filtered = new Mat();
     //holds subMat
     public Mat detectionArea = new Mat();
+
     Telemetry telemetry = null;
 
     public Rect subMat;
@@ -31,36 +51,72 @@ public class ZoneDetectionPipeline extends OpenCvPipeline {
     }
     @Override
     public Mat processFrame(Mat input) {
-        
-        //Convert Color to HSV better for diffreintiating colors
-        Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2HSV);
-        
-        //turns everyhing not in the range of colors to black
-        Core.inRange(input, lower, upper, filtered);
 
         //define searching area REc(x,y,width,height)
-        subMat = new Rect(100,100,100,50);
+        subMat = new Rect(input.width()/2,input.height()/2,input.width()/4,input.height()/4);
+
+        //Search Pink
+        telemetry.addLine("Pink: ");
+        double pinkPercent = determinePercent(input, subMat, pinkLower, pinkUpper);
+        //Search Yellow
+        telemetry.addLine("Yellow: ");
+        double yellowPercent = determinePercent(input, subMat, yellowLower, yellowUpper);
+        //Search Green
+        telemetry.addLine("Green: ");
+        double greenPercent = determinePercent(input, subMat, greenLower, greenUpper);
+        //Search Orange
+        telemetry.addLine("Orange: ");
+        double orangePercent = determinePercent(input, subMat, orangeLower, orangeUpper);
+        //Search Black
+        telemetry.addLine("Black: ");
+        double blackPercent = determinePercent(input, subMat, blackLower, blackUpper);
+        //For Visualization
+        Imgproc.rectangle(input, new Point(subMat.x,subMat.y), new Point(subMat.x+subMat.width, subMat.y+subMat.height), new Scalar(255, 255, 255), 1);
+        telemetry.update();
+        return input;
+
+        //return input;
+    }
+    public double determinePercent(Mat input, Rect searchIn, Scalar lower, Scalar upper){
+        //creat mat to hold hsv
+        Mat hsv = new Mat();
+        //Convert Color to HSV better for diffreintiating colors
+        Imgproc.cvtColor(input, hsv, Imgproc.COLOR_RGB2HSV);
+
+        //Create Mat to hold filtered values
+        Mat filtered = new Mat();
+
+        //turns everyhing not in the range of colors to black inRange(inputMat, lowerRange, UpperRange, outputMat)
+        Core.inRange(hsv, lower, upper, filtered);
+
         //create submat to search in
-        detectionArea = filtered.submat(subMat);
+        Mat detectionArea = filtered.submat(searchIn);
 
         //Sum the elements
         Scalar sum = Core.sumElems(detectionArea);
-        //Sum the ammount should be 255*number of white pixels
+
+        //Retreive the amount from Scalar, should be 255*number of white pixel, kind of janky
+        //String.valueOf(Scalar) returns "[num,0,0,0]"" so we isolate the num and cast it to a double
         Double num = Double.valueOf(String.valueOf(sum).split(",",0)[0].replace("[",""));
-        //total of pixels in the area
-        double area = subMat.width*subMat.height;
-        //Calculate how much percent of Detection Area is white
+
+        //Calculate how many pixels in Detection Area are white
         double numPixelsWhite = (num/255.0);
+
+        //total of pixels in the area
+        double area = searchIn.width*searchIn.height;
+
         //divide nums pixels by total pixels
         double percent = round((numPixelsWhite / area), 3);
-        //For Visualization
-        Imgproc.rectangle(filtered, new Point(subMat.x,subMat.y), new Point(subMat.x+subMat.width, subMat.y+subMat.height), new Scalar(255, 255, 255), 1);
 
         telemetry.addLine("Num"+ numPixelsWhite);
         telemetry.addLine("Total Pixels"+ area);
         telemetry.addLine("Percent"+ percent*100);
-        telemetry.update();
-        return filtered;
+        //relese Mats so it doesnt leak memory
+        detectionArea.release();
+        filtered.release();
+        hsv.release();
+        return percent *100;
+
     }
     public double round(double in, int place){
         int cast = (int)(in * (Math.pow(10,place)));
